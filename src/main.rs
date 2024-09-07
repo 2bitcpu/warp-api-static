@@ -49,9 +49,18 @@ pub fn other_router() -> impl Filter<Extract = impl warp::Reply, Error = warp::R
         .and(warp::path::end())
         .and_then(wait_handler);
 
-    warp::path("manage")
-        .and(warp::path("other"))
-        .and(hello_action.or(wait_action).recover(handle_recover))
+    let json_action = warp::post()
+        .and(warp::path("json"))
+        .and(warp::path::end())
+        .and(warp::body::json())
+        .and_then(json_handler);
+
+    warp::path("manage").and(warp::path("other")).and(
+        hello_action
+            .or(wait_action)
+            .or(json_action)
+            .recover(handle_recover),
+    )
 }
 
 pub async fn hello_handler() -> Result<impl warp::Reply, warp::Rejection> {
@@ -65,6 +74,10 @@ pub async fn wait_handler() -> Result<impl warp::Reply, warp::Rejection> {
     return Ok(warp::reply::json(
         &serde_json::json!({"message":"wait mow!"}),
     ));
+}
+
+pub async fn json_handler(params: serde_json::Value) -> Result<impl warp::Reply, warp::Rejection> {
+    Ok(warp::reply::json(&params))
 }
 
 pub fn static_serve() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {

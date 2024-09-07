@@ -9,5 +9,16 @@ serde_json = { version = "1.0.120", default-features = false, features = ["std"]
 tokio = { version = "1.38.0", default-features = false, features = ["macros", "rt-multi-thread"] }
 warp = "0.3.7"
 
-[build]
-rustc-args = ["-Vv"]
+#[build]
+#rustc-args = ["-Vv"]
+
+[profile.release]
+opt-level = "z"
+debug = false
+lto = true
+strip = true
+codegen-units = 1
+panic = "abort"
+
+# cargo +nightly-2024-06-13 build -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort --target aarch64-unknown-linux-gnu --release
+# upx --best --lzma ./target/aarch64-unknown-linux-gnu/release/warp-api-static
