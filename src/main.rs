@@ -2,6 +2,7 @@ mod error;
 
 use error::handle_recover;
 
+use core::convert::Infallible;
 use std::str::FromStr;
 use warp::{filters::BoxedFilter, http::StatusCode, reply, reply::Reply, Filter};
 
@@ -55,12 +56,24 @@ pub fn other_router() -> impl Filter<Extract = impl warp::Reply, Error = warp::R
         .and(warp::body::json())
         .and_then(json_handler);
 
+    let with_fullpath =
+        warp::path::full().map(move |path: warp::path::FullPath| path.as_str().to_string());
+    let path_action = warp::any()
+        .and(warp::path("path"))
+        .and(with_fullpath)
+        .and_then(path_handler);
+
     warp::path("manage").and(warp::path("other")).and(
         hello_action
             .or(wait_action)
             .or(json_action)
+            .or(path_action)
             .recover(handle_recover),
     )
+}
+
+pub async fn path_handler(path: String) -> Result<impl warp::Reply, warp::Rejection> {
+    return Ok(warp::reply::json(&serde_json::json!({"fullPath":path})));
 }
 
 pub async fn hello_handler() -> Result<impl warp::Reply, warp::Rejection> {
